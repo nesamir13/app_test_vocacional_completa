@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Vocacional - Evaluación, Filtro e Informe</title>
+    <!-- Incluir SheetJS para generación de archivos Excel .xlsx nativos -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1f497d;
+            --secondary: #2980b9;
+            --accent: #27ae60;
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            background-color: #eef5fc;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .question-card {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .question-text {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .options label {
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            transition: all 0.2s ease;
+        }
+
+        .options label:hover {
+            border-color: var(--primary);
+            background: #f0f7ff;
+        }
+
+        .btn-submit, .btn-export {
+            display: block;
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+
+        .btn-submit:hover { background-color: #143257; }
+        .btn-export { background-color: var(--accent); }
+        .btn-export:hover { background-color: #1e8449; }
+
+        #resultsSection {
+            display: none;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #ccc;
+        }
+
+        .result-card {
+            background: #e8f8f5;
+            border-left: 5px solid var(--accent);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .result-title {
+            color: var(--accent);
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .career-list {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border: 1px solid #dcdcdc;
+        }
+
+        /* Sección de Informe e Historial en la App */
+        .informe-app-container {
+            margin-top: 40px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        .filter-box {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+        }
+
+        .summary-table th, .summary-table td {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .summary-table th {
+            background: var(--primary);
+            color: white;
+        }
+
+        .area-group {
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .area-header {
+            background: var(--secondary);
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .visitor-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .visitor-table th, .visitor-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        .visitor-table th {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .empty-msg {
+            padding: 12px;
+            font-style: italic;
+            color: #777;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Test Vocacional y Panel de Informes</h1>
+    
+    <!-- Datos del Bachiller -->
+    <div style="background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 20px;">
+        <h3 style="margin-top:0; color: var(--primary); text-align: left;">1. Registro de Identificación</h3>
+        <div class="form-group">
+            <label for="nombre">Nombre Completo:</label>
+            <input type="text" id="nombre" placeholder="Ej. Ana Lucía Morales" required>
+        </div>
+        <div class="form-group">
+            <label for="colegio">Colegio / Instituto de Procedencia:</label>
+            <input type="text" id="colegio" placeholder="Ej. Instituto Nacional Rubén Darío" required>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <strong>2. Evaluación Vocacional:</strong> Responde cada afirmación indicando tu grado de interés:<br>
+        <em>1: No me interesa | 2: Me interesa poco | 3: Me interesa | 4: Me apasiona</em>
+    </div>
+
+    <form id="vocationalForm">
+        <div id="questionsContainer"></div>
+        <button type="button" class="btn-submit" onclick="procesarEvaluacion()">Completar Test y Registrarme</button>
+    </form>
+
+    <!-- Resultado Individual -->
+    <div id="resultsSection">
+        <div class="result-card">
+            <div class="result-title" id="topArea"></div>
+            <p><strong>Bachiller:</strong> <span id="resNombre"></span> (<span id="resColegio"></span>)</p>
+            <p><strong>Perfil Vocacional:</strong> <span id="topProfile"></span></p>
+            <div class="career-list">
+                <strong>Carreras asociadas recomendadas:</strong>
+                <p id="topCareers" style="margin-top: 5px; color: var(--primary); font-weight: 600;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL DE INFORMES Y VISUALIZACIÓN EN LA APP -->
+    <div class="informe-app-container">
+        <h2>📊 Panel de Informes Estadísticos en Pantalla</h2>
+        <p style="font-size: 13px; color: #555; text-align: center;">Filtra los resultados por fecha de aplicación para visualizar las estadísticas directamente en la aplicación.</p>
+
+        <!-- Filtro por Fecha -->
+        <div class="filter-box">
+            <div style="flex: 1; min-width: 200px;">
+                <label for="filtroFecha" style="font-weight: bold; font-size: 13px;">Filtrar por Fecha de Aplicación:</label>
+                <input type="date" id="filtroFecha" onchange="renderizarInformeApp()">
+            </div>
+            <button type="button" onclick="limpiarFiltro()" style="padding: 10px 15px; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Ver Todas las Fechas</button>
+        </div>
+
+        <!-- 1. Tabla Resumen Estadístico en la App -->
+        <h3>📈 Resumen Consolidado por Área del Conocimiento</h3>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Área del Saber</th>
+                    <th>Frecuencia (N°)</th>
+                    <th>Porcentaje (%)</th>
+                </tr>
+            </thead>
+            <tbody id="tablaResumenApp"></tbody>
+        </table>
+
+        <!-- 2. Registro Agrupado por Áreas -->
+        <h3>📁 Detalle de Bachilleres Evaluados por Área</h3>
+        <div id="registrosPorAreaApp"></div>
+
+        <!-- Descarga con Contraseña -->
+        <div style="margin-top: 25px; text-align: center; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <p style="margin-top: 0; font-size: 13px; color: #475569;"><strong>Acceso protegido para administradores:</strong> La descarga del archivo Excel requiere clave de seguridad.</p>
+            <button class="btn-export" onclick="solicitarClaveYExportar()">🔒 Descargar Informe Oficial en Excel (.xlsx)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const preguntas = [
+    { id: 1, area: "IT", text: "Me entusiasma resolver problemas lógicos o entender cómo funcionan los programas de computadora." },
+    { id: 2, area: "CS", text: "Me genera curiosidad aprender sobre el cuerpo humano, tratamientos médicos o el funcionamiento biológico." },
+    { id: 3, area: "SH", text: "Disfruto debatir ideas, defender causas sociales o analizar el comportamiento humano en la sociedad." },
+    { id: 4, area: "EA", text: "Me motiva planificar presupuestos, liderar proyectos o identificar oportunidades de negocios." },
+    { id: 5, area: "AD", text: "Me apasiona el dibujo, la composición visual, la fotografía o la creación de elementos estéticos." },
+    { id: 6, area: "IT", text: "Me resulta fácil y entretenido trabajar con números, algoritmos o construir estructuras mecánicas." },
+    { id: 7, area: "CS", text: "Siento vocación por ayudar al bienestar físico o emocional directo de las personas en situación de vulnerabilidad." },
+    { id: 8, area: "SH", text: "Me interesa escribir ensayos, analizar textos históricos o enseñar a otros temas complejos." },
+    { id: 9, area: "EA", text: "Suelo organizar actividades grupales, coordinar tareas y enfocarme en lograr metas con eficiencia." },
+    { id: 10, area: "AD", text: "Prefiero expresar mis ideas mediante formas creativas, música, producción de video o espacio arquitectónico." },
+    { id: 11, area: "IT", text: "Me llama la atención la innovación tecnológica, la robótica o la automatización de procesos." },
+    { id: 12, area: "CS", text: "Disfruto del trabajo en laboratorios, la investigación biológica o el estudio de enfermedades." },
+    { id: 13, area: "SH", text: "Me preocupa la justicia social, los derechos humanos y la política pública." },
+    { id: 14, area: "EA", text: "Me gusta analizar datos económicos, estados financieros o la venta de productos y servicios." },
+    { id: 15, area: "AD", text: "Valoro la libertad creativa y el diseño visual por encima de las tareas rutinarias y estructuradas." }
+];
+
+const infoAreas = {
+    "IT": {
+        nombre: "Ingeniería y Tecnología",
+        perfil: "Posees inclinación hacia el razonamiento analítico, la resolución de problemas estructurados y la innovación técnica.",
+        carreras: "Ingeniería en Sistemas / Computación, Ingeniería Civil, Ingeniería Industrial, Mecatrónica, Ciencia de Datos."
+    },
+    "CS": {
+        nombre: "Ciencias de la Salud",
+        perfil: "Muestras interés por la investigación biológica, el cuidado de la vida y el apoyo a la salud integral humana.",
+        carreras: "Medicina, Enfermería, Farmacia, Biotecnología, Odontología, Nutrición."
+    },
+    "SH": {
+        nombre: "Ciencias Sociales y Humanidades",
+        perfil: "Destacas por tu vocación analítica sobre los fenómenos sociales, la comunicación interpersonal y el marco legal/humanístico.",
+        carreras: "Derecho, Psicología, Relaciones Internacionales, Sociología, Comunicación Social, Educación."
+    },
+    "EA": {
+        nombre: "Económico-Administrativa",
+        perfil: "Evidencias capacidad estratégica, visión organizativa y gusto por la gestión de recursos o proyectos.",
+        carreras: "Administración de Empresas, Finanzas, Marketing Digital, Negocios Internacionales, Economía."
+    },
+    "AD": {
+        nombre: "Arte y Diseño",
+        perfil: "Cuentas con alta sensibilidad creativa, expresión visual y destreza para la conceptualización de ideas estéticas.",
+        carreras: "Arquitectura, Diseño Gráfico, Diseño Industrial, Publicidad, Producción Audiovisual."
+    }
+};
+
+let visitantes = JSON.parse(localStorage.getItem("registro_visitantes_test")) || [
+    { nombre: "Carlos Eduardo Mendoza", colegio: "Instituto Ramírez", fecha: "2026-09-28", areaKey: "IT", puntaje: 12 },
+    { nombre: "María José Gutiérrez", colegio: "Colegio San Francisco", fecha: "2026-09-28", areaKey: "CS", puntaje: 11 },
+    { nombre: "Jorge Luis Blandón", colegio: "Liceo Agrícola", fecha: "2026-09-27", areaKey: "IT", puntaje: 10 },
+    { nombre: "Sofía Isabel Torres", colegio: "Colegio San Francisco", fecha: "2026-09-27", areaKey: "EA", puntaje: 12 }
+];
+
+const container = document.getElementById("questionsContainer");
+
+preguntas.forEach((q, index) => {
+    const card = document.createElement("div");
+    card.className = "question-card";
+    card.innerHTML = `
+        <div class="question-text">${index + 1}. ${q.text}</div>
+        <div class="options">
+            <label><input type="radio" name="q${q.id}" value="1" required> 1 - Nada</label>
+            <label><input type="radio" name="q${q.id}" value="2"> 2 - Poco</label>
+            <label><input type="radio" name="q${q.id}" value="3"> 3 - Bastante</label>
+            <label><input type="radio" name="q${q.id}" value="4"> 4 - Mucho</label>
+        </div>
+    `;
+    container.appendChild(card);
+});
+
+function procesarEvaluacion() {
+    const nombre = document.getElementById("nombre").value.trim();
+    const colegio = document.getElementById("colegio").value.trim();
+
+    if (!nombre || !colegio) {
+        alert("Por favor completa los datos de identificación (Nombre y Colegio).");
+        return;
+    }
+
+    const form = document.getElementById("vocationalForm");
+    const scores = { IT: 0, CS: 0, SH: 0, EA: 0, AD: 0 };
+    let completo = true;
+
+    preguntas.forEach(q => {
+        const selected = form.querySelector(`input[name="q${q.id}"]:checked`);
+        if (selected) {
+            scores[q.area] += parseInt(selected.value);
+        } else {
+            completo = false;
+        }
+    });
+
+    if (!completo) {
+        alert("Por favor responde a todas las preguntas antes de enviar.");
+        return;
+    }
+
+    let topAreaKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+    const areaInfo = infoAreas[topAreaKey];
+
+    document.getElementById("resNombre").innerText = nombre;
+    document.getElementById("resColegio").innerText = colegio;
+    document.getElementById("topArea").innerText = "🌟 Tu Área de Mayor Fortaleza: " + areaInfo.nombre;
+    document.getElementById("topProfile").innerText = areaInfo.perfil;
+    document.getElementById("topCareers").innerText = areaInfo.carreras;
+    document.getElementById("resultsSection").style.display = "block";
+
+    const fechaActual = new Date().toISOString().split('T')[0];
+    const nuevoVisitante = {
+        nombre: nombre,
+        colegio: colegio,
+        fecha: fechaActual,
+        areaKey: topAreaKey,
+        puntaje: scores[topAreaKey]
+    };
+
+    visitantes.push(nuevoVisitante);
+    localStorage.setItem("registro_visitantes_test", JSON.stringify(visitantes));
+
+    renderizarInformeApp();
+    document.getElementById("resultsSection").scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderizarInformeApp() {
+    const fechaFiltro = document.getElementById("filtroFecha").value;
+    
+    // Filtrar visitantes por fecha si hay un valor seleccionado
+    let listaFiltrada = visitantes;
+    if (fechaFiltro) {
+        listaFiltrada = visitantes.filter(v => v.fecha === fechaFiltro);
+    }
+
+    const totalFiltrado = listaFiltrada.length;
+
+    // 1. Renderizar Tabla Resumen
+    const tbodyResumen = document.getElementById("tablaResumenApp");
+    tbodyResumen.innerHTML = "";
+
+    Object.keys(infoAreas).forEach(key => {
+        const count = listaFiltrada.filter(v => v.areaKey === key).length;
+        const pct = totalFiltrado > 0 ? ((count / totalFiltrado) * 100).toFixed(1) : 0.0;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="text-align: left; font-weight: 600;">${infoAreas[key].nombre}</td>
+            <td><strong>${count}</strong></td>
+            <td>${pct}%</td>
+        `;
+        tbodyResumen.appendChild(tr);
+    });
+
+    // Fila Total
+    const trTotal = document.createElement("tr");
+    trTotal.style.background = "#f1f5f9";
+    trTotal.style.fontWeight = "bold";
+    trTotal.innerHTML = `
+        <td style="text-align: left;">TOTAL EVALUADOS</td>
+        <td>${totalFiltrado}</td>
+        <td>100.0%</td>
+    `;
+    tbodyResumen.appendChild(trTotal);
+
+    // 2. Renderizar Detalle por Área
+    const contenedor = document.getElementById("registrosPorAreaApp");
+    contenedor.innerHTML = "";
+
+    Object.keys(infoAreas).forEach(areaKey => {
+        const areaInfo = infoAreas[areaKey];
+        const visitantesArea = listaFiltrada.filter(v => v.areaKey === areaKey);
+
+        const areaGroup = document.createElement("div");
+        areaGroup.className = "area-group";
+
+        let htmlHeader = `
+            <div class="area-header">
+                <span>📁 ${areaInfo.nombre}</span>
+                <span>Total: ${visitantesArea.length} visitante(s)</span>
+            </div>
+        `;
+
+        let htmlTable = "";
+
+        if (visitantesArea.length > 0) {
+            htmlTable = `
+                <table class="visitor-table">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Nombre del Bachiller</th>
+                            <th>Colegio / Instituto</th>
+                            <th>Fecha</th>
+                            <th>Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            visitantesArea.forEach((v, idx) => {
+                htmlTable += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><strong>${v.nombre}</strong></td>
+                        <td>${v.colegio}</td>
+                        <td>${v.fecha}</td>
+                        <td>${v.puntaje} pts</td>
+                    </tr>
+                `;
+            });
+
+            htmlTable += `</tbody></table>`;
+        } else {
+            htmlTable = `<div class="empty-msg">No hay bachilleres registrados en esta área para el criterio seleccionado.</div>`;
+        }
+
+        areaGroup.innerHTML = htmlHeader + htmlTable;
+        contenedor.appendChild(areaGroup);
+    });
+}
+
+function limpiarFiltro() {
+    document.getElementById("filtroFecha").value = "";
+    renderizarInformeApp();
+}
+
+function solicitarClaveYExportar() {
+    // Contraseña simple para descargar el archivo Excel
+    const claveIngresada = prompt("🔒 Ingrese la contraseña de seguridad para descargar el informe en Excel:");
+    
+    if (claveIngresada === "1234") {
+        exportarExcelXLSX();
+    } else if (claveIngresada !== null) {
+        alert("❌ Contraseña incorrecta. Acceso denegado a la descarga.");
+    }
+}
+
+function exportarExcelXLSX() {
+    if (visitantes.length === 0) {
+        alert("No hay registros para exportar.");
+        return;
+    }
+
+    const fechaFiltro = document.getElementById("filtroFecha").value;
+    let listaExportar = visitantes;
+    let tituloFiltro = "Todas las fechas";
+
+    if (fechaFiltro) {
+        listaExportar = visitantes.filter(v => v.fecha === fechaFiltro);
+        tituloFiltro = "Fecha: " + fechaFiltro;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const totalVisitantes = listaExportar.length;
+
+    // 1. Hoja Estadísticas y Resumen
+    const summaryData = [
+        ["INFORME ESTADÍSTICO DE VISITANTES POR ÁREA DEL CONOCIMIENTO"],
+        ["Filtro Aplicado:", tituloFiltro],
+        ["Total de Bachilleres Registrados:", totalVisitantes],
+        [],
+        ["Área del Saber / Conocimiento", "Cantidad de Visitantes", "Porcentaje (%)"]
+    ];
+
+    Object.keys(infoAreas).forEach(key => {
+        const areaNombre = infoAreas[key].nombre;
+        const count = listaExportar.filter(v => v.areaKey === key).length;
+        const pct = totalVisitantes > 0 ? (count / totalVisitantes) : 0;
+        summaryData.push([areaNombre, count, (pct * 100).toFixed(1) + "%"]);
+    });
+
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Informe_Estadistico");
+
+    // 2. Hoja Registro Completo de Visitantes
+    const regData = [
+        ["N°", "Nombre del Bachiller", "Colegio / Instituto", "Fecha", "Área del Conocimiento", "Puntaje"]
+    ];
+
+    listaExportar.forEach((v, i) => {
+        regData.push([
+            i + 1,
+            v.nombre,
+            v.colegio,
+            v.fecha,
+            infoAreas[v.areaKey].nombre,
+            v.puntaje + " / 12"
+        ]);
+    });
+
+    const wsReg = XLSX.utils.aoa_to_sheet(regData);
+    XLSX.utils.book_append_sheet(wb, wsReg, "Registro_General");
+
+    // 3. Hoja Agrupada por Áreas
+    const agrupadoData = [
+        ["REGISTRO DE VISITANTES AGRUPADOS POR ÁREA DEL CONOCIMIENTO (" + tituloFiltro + ")"],
+        []
+    ];
+
+    Object.keys(infoAreas).forEach(key => {
+        const areaNombre = infoAreas[key].nombre;
+        const listaArea = listaExportar.filter(v => v.areaKey === key);
+
+        agrupadoData.push(["📁 ÁREA: " + areaNombre.toUpperCase()]);
+        agrupadoData.push(["N°", "Nombre del Bachiller", "Colegio / Instituto", "Fecha", "Puntaje"]);
+
+        if (listaArea.length > 0) {
+            listaArea.forEach((v, idx) => {
+                agrupadoData.push([idx + 1, v.nombre, v.colegio, v.fecha, v.puntaje + " pts"]);
+            });
+        } else {
+            agrupadoData.push(["-", "Sin visitantes registrados en esta área", "-", "-", "-"]);
+        }
+        agrupadoData.push([]);
+    });
+
+    const wsAgrupado = XLSX.utils.aoa_to_sheet(agrupadoData);
+    XLSX.utils.book_append_sheet(wb, wsAgrupado, "Agrupado_Por_Area");
+
+    XLSX.writeFile(wb, "Informe_Estadistico_Visitantes_Vocacional.xlsx");
+}
+
+// Inicializar informe en la aplicación al cargar
+renderizarInformeApp();
+</script>
+
+</body>
+</html>
